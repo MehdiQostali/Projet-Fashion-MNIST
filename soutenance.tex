@@ -1,0 +1,1957 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{fvextra}
+\usepackage{framed}
+\usepackage{ragged2e}
+\usepackage{titlesec}
+\usepackage{microtype}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+\setlist[itemize]{leftmargin=1.2cm,itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=1.2cm,itemsep=2pt,topsep=3pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\sloppy
+\emergencystretch=3em
+
+\DefineVerbatimEnvironment{codeblock}{Verbatim}{breaklines=true,breakanywhere=true,fontsize=\small}
+
+\title{Préparation de la soutenance}
+\author{Mehdi Qostali et Hakim Ziane}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+
+\section{Modalités}
+
+\begin{itemize}
+\item Durée : 10 minutes pour un binôme, 7 minutes pour un monôme.
+\item Support : ordinateur avec le notebook et le poster.
+\item Déroulement :
+\item présentation rapide des expérimentations et résultats : maximum 4 à 5 minutes ;
+\item questions individuelles sur les expériences et le code Python.
+\item La note est individuelle, même dans un binôme.
+\end{itemize}
+
+\section{Objectif du projet}
+
+Le projet porte sur Fashion-MNIST, un jeu de données composé d'images de vêtements.
+
+Le but est double :
+
+\begin{itemize}
+\item faire de l'apprentissage supervisé pour prédire la classe d'une image ;
+\item faire de l'apprentissage non-supervisé pour voir si les images se regroupent naturellement en classes cohérentes.
+\end{itemize}
+
+Fashion-MNIST contient :
+
+\begin{itemize}
+\item 60 000 images d'entraînement ;
+\item 10 000 images de test ;
+\item 10 classes ;
+\item des images en niveaux de gris de taille 28 x 28 pixels.
+\end{itemize}
+
+Chaque image est donc représentée par 784 valeurs numériques.
+
+Répartition des images par classe :
+
+\begin{center}
+\small
+\begin{tabular}{|>{\RaggedRight\arraybackslash}p{0.23\linewidth}|>{\RaggedRight\arraybackslash}p{0.23\linewidth}|>{\RaggedRight\arraybackslash}p{0.23\linewidth}|>{\RaggedRight\arraybackslash}p{0.23\linewidth}|}
+\hline
+Jeu de données & Total & Nombre de classes & Images par classe \\
+\hline
+Entraînement & 60 000 & 10 & 6 000 \\
+\hline
+Test & 10 000 & 10 & 1 000 \\
+\hline
+\end{tabular}
+\end{center}
+
+Donc, dans le jeu complet, chaque classe possède :
+
+\begin{itemize}
+\item 6 000 images d'entraînement ;
+\item 1 000 images de test.
+\end{itemize}
+
+Exemple :
+
+\begin{codeblock}
+label 0 = T-shirt/top  -> 6 000 images train, 1 000 images test
+label 6 = Shirt        -> 6 000 images train, 1 000 images test
+label 9 = Ankle boot   -> 6 000 images train, 1 000 images test
+\end{codeblock}
+
+Dans le notebook, certains calculs utilisent des échantillons stratifiés pour réduire le temps de calcul.
+
+Exemples :
+
+\begin{itemize}
+\item échantillon multi-classe de 5 000 images : environ 500 images par classe ;
+\item échantillon multi-classe de 20 000 images : environ 2 000 images par classe ;
+\item classification binaire T-shirt/top vs Shirt : 12 000 images d'entraînement dans le jeu complet, soit 6 000 par classe ;
+\item test binaire T-shirt/top vs Shirt : 2 000 images, soit 1 000 par classe.
+\end{itemize}
+
+Phrase à retenir :
+
+\begin{quote}
+\itshape Dans Fashion-MNIST, chaque classe possède 6 000 images d'entraînement et 1 000 images de test dans le jeu complet.
+\end{quote}
+
+\section{Différence entre apprentissage supervisé et non-supervisé}
+
+\subsection{Apprentissage supervisé}
+
+Dans l'apprentissage supervisé, chaque exemple d'entraînement possède déjà une réponse connue.
+
+Dans notre projet :
+
+\begin{itemize}
+\item l'entrée est une image de vêtement ;
+\item la sortie attendue est son label, par exemple \texttt{Shirt}, \texttt{Trouser} ou \texttt{Bag}.
+\end{itemize}
+
+Le modèle apprend donc à associer les pixels d'une image à une classe connue.
+
+Exemple :
+
+\begin{itemize}
+\item entrée : une image Fashion-MNIST ;
+\item label connu : \texttt{Shirt} ;
+\item calcul : le modèle apprend les caractéristiques qui permettent de reconnaître cette classe ;
+\item sortie attendue après entraînement : prédire \texttt{Shirt} pour une image similaire.
+\end{itemize}
+
+Les modèles supervisés utilisés dans le projet sont par exemple :
+
+\begin{itemize}
+\item perceptron ;
+\item régression logistique avec SGD ;
+\item kNN ;
+\item arbre de décision ;
+\item forêt aléatoire.
+\end{itemize}
+
+\subsection{Comment chaque modèle reconnaît une image}
+
+Tous les modèles n'utilisent pas la même idée de ressemblance.
+
+\begin{center}
+\small
+\begin{tabular}{|>{\RaggedRight\arraybackslash}p{0.32\linewidth}|>{\RaggedRight\arraybackslash}p{0.32\linewidth}|}
+\hline
+Modèle & Principe utilisé \\
+\hline
+Perceptron & Apprend des poids sur les pixels et choisit la classe avec le meilleur score linéaire. \\
+\hline
+Régression logistique avec SGD & Apprend aussi des poids, puis estime un score ou une probabilité pour chaque classe. \\
+\hline
+kNN & Compare directement la nouvelle image aux images d'entraînement les plus proches. \\
+\hline
+Arbre de décision & Pose une suite de questions sur les valeurs des pixels, puis arrive dans une feuille associée à une classe. \\
+\hline
+Forêt aléatoire & Combine plusieurs arbres : chaque arbre vote, puis la classe majoritaire est choisie. \\
+\hline
+\end{tabular}
+\end{center}
+
+Phrase à retenir :
+
+\begin{quote}
+\itshape Le kNN mesure directement la ressemblance entre images. Les autres modèles apprennent plutôt des règles numériques à partir des pixels pour choisir la classe la plus probable.
+\end{quote}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape En supervisé, le modèle apprend avec les bonnes réponses. On lui donne les images et leurs labels, puis on vérifie s'il arrive à prédire correctement les labels sur de nouvelles images.
+\end{quote}
+
+\subsection{Apprentissage non-supervisé}
+
+Dans l'apprentissage non-supervisé, le modèle ne reçoit pas les labels pendant l'apprentissage.
+
+Dans notre projet :
+
+\begin{itemize}
+\item l'entrée est toujours une image de vêtement ;
+\item mais le modèle ne connaît pas sa vraie classe ;
+\item il cherche seulement à regrouper les images qui se ressemblent.
+\end{itemize}
+
+Exemple :
+
+\begin{itemize}
+\item entrée : plusieurs images Fashion-MNIST sans labels ;
+\item calcul : le modèle mesure les ressemblances entre images ;
+\item sortie : des groupes, appelés clusters.
+\end{itemize}
+
+Les méthodes non-supervisées utilisées dans le projet sont :
+
+\begin{itemize}
+\item ACP pour réduire la dimension ;
+\item k-means pour créer des clusters ;
+\item clustering hiérarchique pour construire des groupes progressivement.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape En non-supervisé, le modèle n'a pas les bonnes réponses. Il cherche tout seul des groupes d'images similaires. Ensuite seulement, on compare ces groupes aux vraies classes avec des scores comme ARI et NMI.
+\end{quote}
+
+\subsection{Comparaison simple}
+
+\begin{center}
+\small
+\begin{tabular}{|>{\RaggedRight\arraybackslash}p{0.30\linewidth}|>{\RaggedRight\arraybackslash}p{0.30\linewidth}|>{\RaggedRight\arraybackslash}p{0.30\linewidth}|}
+\hline
+Point comparé & Supervisé & Non-supervisé \\
+\hline
+Labels pendant l'apprentissage & Oui & Non \\
+\hline
+Objectif & Prédire une classe & Trouver des groupes \\
+\hline
+Exemple dans le projet & Forêt aléatoire & k-means \\
+\hline
+Sortie & Label prédit & Numéro de cluster \\
+\hline
+Évaluation & Accuracy, matrice de confusion & ARI, NMI, silhouette \\
+\hline
+\end{tabular}
+\end{center}
+
+Phrase courte à retenir :
+
+\begin{quote}
+\itshape Le supervisé apprend à prédire des labels connus, tandis que le non-supervisé cherche des groupes sans connaître les labels.
+\end{quote}
+
+\section{Précision importante sur le fonctionnement du supervisé}
+
+Il ne faut pas confondre l'apprentissage supervisé avec une simple comparaison à une image moyenne ou à une figure représentative.
+
+Dans notre projet, au départ, on sépare bien :
+
+\begin{itemize}
+\item \texttt{X} : les pixels des images ;
+\item \texttt{y} : les labels numériques associés aux images.
+\end{itemize}
+
+Exemple :
+
+\begin{codeblock}
+X[0] = les 784 pixels d'une image
+y[0] = le label réel de cette image, par exemple 6
+\end{codeblock}
+
+Le label \texttt{6} correspond ensuite à la classe lisible \texttt{Shirt}.
+
+Mais le modèle n'apprend pas forcément en créant une image représentative de chaque classe.
+
+Le fonctionnement dépend du modèle utilisé.
+
+\subsection{Exemple général}
+
+Pendant l'entraînement, le modèle reçoit beaucoup d'exemples :
+
+\begin{codeblock}
+pixels image 1 -> label 6
+pixels image 2 -> label 0
+pixels image 3 -> label 9
+...
+\end{codeblock}
+
+Il cherche ensuite des régularités numériques dans les pixels.
+
+Après entraînement, pour une nouvelle image, il reçoit seulement les pixels :
+
+\begin{codeblock}
+nouvelle image = 784 pixels
+\end{codeblock}
+
+et il prédit un label :
+
+\begin{codeblock}
+label prédit = 6
+\end{codeblock}
+
+Puis on traduit ce label avec \texttt{CLASS\_NAMES} :
+
+\begin{codeblock}
+6 -> Shirt
+\end{codeblock}
+
+Phrase importante :
+
+\begin{quote}
+\itshape En supervisé, le modèle apprend à associer des motifs de pixels à des labels connus. Il ne se contente pas forcément de comparer l'image à une image moyenne de chaque classe.
+\end{quote}
+
+\subsection{Différence selon les modèles}
+
+Tous les modèles ne raisonnent pas de la même façon.
+
+\subsubsection{kNN}
+
+Le kNN est le modèle qui ressemble le plus à une comparaison par ressemblance.
+
+Pour une nouvelle image :
+
+\begin{itemize}
+\item il cherche les images d'entraînement les plus proches ;
+\item il regarde leurs labels ;
+\item il prédit la classe majoritaire parmi les voisins.
+\end{itemize}
+
+Phrase à dire :
+
+\begin{quote}
+\itshape Avec kNN, la prédiction repose directement sur la ressemblance avec des exemples déjà connus.
+\end{quote}
+
+\subsubsection{Arbre de décision}
+
+Un arbre de décision ne compare pas à une image moyenne.
+
+Il pose une suite de questions sur les pixels.
+
+Exemple simplifié :
+
+\begin{codeblock}
+pixel 120 > 0,4 ?
+pixel 315 < 0,2 ?
+pixel 76 > 0,7 ?
+\end{codeblock}
+
+À la fin du chemin dans l'arbre, il donne une classe.
+
+Phrase à dire :
+
+\begin{quote}
+\itshape Un arbre prédit une classe en suivant une suite de décisions sur les valeurs des pixels.
+\end{quote}
+
+\subsubsection{Forêt aléatoire}
+
+Une forêt aléatoire combine plusieurs arbres de décision.
+
+Pour une image :
+
+\begin{itemize}
+\item chaque arbre donne une prédiction ;
+\item les arbres votent ;
+\item la classe majoritaire est choisie.
+\end{itemize}
+
+Exemple :
+
+\begin{codeblock}
+arbre 1 -> Shirt
+arbre 2 -> Shirt
+arbre 3 -> T-shirt/top
+arbre 4 -> Shirt
+\end{codeblock}
+
+Résultat :
+
+\begin{codeblock}
+classe prédite = Shirt
+\end{codeblock}
+
+Phrase à dire :
+
+\begin{quote}
+\itshape Dans notre meilleur modèle, la forêt aléatoire prédit grâce au vote de plusieurs arbres, pas grâce à une seule image représentative.
+\end{quote}
+
+\subsubsection{Perceptron et régression logistique}
+
+Ces modèles sont linéaires.
+
+Ils apprennent des poids numériques associés aux pixels.
+
+Chaque pixel influence plus ou moins la décision finale.
+
+Phrase à dire :
+
+\begin{quote}
+\itshape Les modèles linéaires apprennent des poids sur les pixels pour calculer un score par classe.
+\end{quote}
+
+\subsection{Formulation correcte à retenir}
+
+Formulation à éviter :
+
+\begin{quote}
+\itshape On crée une figure représentative de chaque classe et on compare la nouvelle image avec cette figure.
+\end{quote}
+
+Formulation correcte :
+
+\begin{quote}
+\itshape On sépare les pixels et les labels. Ensuite, chaque modèle apprend à sa façon une règle qui associe les motifs de pixels aux labels. Pour une nouvelle image, le modèle utilise cette règle pour prédire le label le plus probable.
+\end{quote}
+
+\section{Trame orale pour les 4 à 5 minutes}
+
+\subsection{1. Présentation des données, environ 30 secondes}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Nous avons travaillé sur Fashion-MNIST. Le jeu de données contient 60 000 images d'entraînement et 10 000 images de test. Chaque image représente un vêtement en niveaux de gris, avec une taille de 28 x 28 pixels. Il y a 10 classes, par exemple T-shirt/top, Trouser, Pullover, Shirt, Bag ou Ankle boot.
+\end{quote}
+
+À retenir :
+
+\begin{itemize}
+\item une image = 784 pixels ;
+\item un label = la classe réelle du vêtement ;
+\item les classes sont globalement équilibrées.
+\end{itemize}
+
+\subsection{2. Préparation des données, environ 45 secondes}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Nous avons séparé les pixels et les labels avec la fonction \texttt{split\_features\_labels}. Les pixels ont été normalisés en divisant les valeurs par 255, pour passer de l'intervalle \texttt{[0, 255]} à \texttt{[0, 1]}. Nous avons aussi utilisé des échantillons stratifiés pour garder les proportions des classes tout en réduisant le temps de calcul.
+\end{quote}
+
+À retenir :
+
+\begin{itemize}
+\item \texttt{X} contient les pixels ;
+\item \texttt{y} contient les labels ;
+\item la normalisation rend les valeurs plus faciles à traiter ;
+\item l'échantillonnage stratifié évite de déséquilibrer les classes.
+\end{itemize}
+
+\subsection{3. Apprentissage supervisé, environ 1 minute 30}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Nous avons comparé plusieurs modèles supervisés : une baseline, un perceptron, une régression logistique avec SGD, un kNN, un arbre de décision et une forêt aléatoire. La baseline sert seulement de référence minimale. Les modèles ont été comparés avec une validation croisée stratifiée.
+\end{quote}
+
+Phrase pour le binaire :
+
+\begin{quote}
+\itshape En classification binaire, nous avons étudié T-shirt/top contre Shirt. Ce choix est intéressant parce que les deux classes sont visuellement proches. La forêt aléatoire obtient une accuracy de 0,8535 sur le jeu de test.
+\end{quote}
+
+Phrase pour le multi-classe :
+
+\begin{quote}
+\itshape En classification multi-classe, sur les 10 classes, la forêt aléatoire est aussi le meilleur modèle parmi ceux testés. Elle obtient une accuracy de 0,8700 sur le jeu de test.
+\end{quote}
+
+À retenir :
+
+\begin{itemize}
+\item la forêt aléatoire est le meilleur modèle testé ;
+\item le binaire T-shirt/top contre Shirt est difficile ;
+\item le multi-classe donne un bon score global, mais certaines classes restent confondues.
+\end{itemize}
+
+\subsection{4. Analyse des erreurs, environ 45 secondes}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Nous avons utilisé une matrice de confusion pour comprendre les erreurs. Dans cette matrice, les lignes correspondent aux vraies classes et les colonnes aux classes prédites. La diagonale correspond aux bonnes prédictions, tandis que les cases hors diagonale correspondent aux erreurs.
+\end{quote}
+
+Phrase sur les résultats :
+
+\begin{quote}
+\itshape Les erreurs se concentrent surtout sur les vêtements du haut. La classe Shirt est souvent confondue avec T-shirt/top, Pullover ou Coat. Cela s'explique par la faible résolution des images, car ces vêtements ont des silhouettes proches en 28 x 28 pixels.
+\end{quote}
+
+À retenir :
+
+\begin{itemize}
+\item bleu clair = peu d'exemples ;
+\item bleu foncé = beaucoup d'exemples ;
+\item diagonale = bonnes prédictions ;
+\item hors diagonale = erreurs ;
+\item Shirt est la classe la plus fragile.
+\end{itemize}
+
+\subsection{5. Apprentissage non-supervisé, environ 1 minute}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Pour la partie non-supervisée, nous avons utilisé une ACP avant le clustering. L'ACP permet de réduire la dimension des données tout en gardant l'information principale. Avec 50 composantes principales, on conserve environ 86,6 \% de la variance.
+\end{quote}
+
+Phrase sur k-means :
+
+\begin{quote}
+\itshape Nous avons testé k-means avec plusieurs valeurs de k. Comme Fashion-MNIST contient 10 classes, nous avons surtout étudié k = 10. Pour k = 10, nous obtenons environ 0,385 en ARI et 0,536 en NMI.
+\end{quote}
+
+Phrase sur le hiérarchique :
+
+\begin{quote}
+\itshape Nous avons aussi testé un clustering hiérarchique sur un échantillon plus petit, car cette méthode est plus coûteuse. Il obtient environ 0,430 en ARI et 0,611 en NMI.
+\end{quote}
+
+À retenir :
+
+\begin{itemize}
+\item l'ACP réduit la dimension ;
+\item k-means ne connaît pas les labels pendant l'apprentissage ;
+\item ARI et NMI servent à comparer les clusters aux vraies classes ;
+\item le non-supervisé retrouve des groupes visuels, mais pas parfaitement les 10 classes.
+\end{itemize}
+
+\subsection{6. Conclusion, environ 30 secondes}
+
+Phrase possible :
+
+\begin{quote}
+\itshape Pour conclure, l'apprentissage supervisé donne les meilleurs résultats pour prédire les labels, avec la forêt aléatoire comme meilleur modèle testé. Les erreurs restantes concernent surtout les vêtements du haut, car ils sont visuellement proches. Le non-supervisé permet de retrouver certaines familles visuelles, mais il ne reconstitue pas parfaitement les 10 classes.
+\end{quote}
+
+Phrase de fin :
+
+\begin{quote}
+\itshape Pour améliorer le projet, on pourrait entraîner les modèles sur toute la base, optimiser davantage les hyper-paramètres ou tester un modèle convolutionnel, mieux adapté aux images.
+\end{quote}
+
+\section{Répartition possible en binôme}
+
+\subsection{Personne 1}
+
+\begin{itemize}
+\item présenter Fashion-MNIST ;
+\item expliquer la préparation des données ;
+\item expliquer les modèles supervisés ;
+\item présenter les résultats binaires et multi-classes.
+\end{itemize}
+
+\subsection{Personne 2}
+
+\begin{itemize}
+\item expliquer la matrice de confusion ;
+\item analyser les erreurs ;
+\item expliquer l'ACP ;
+\item présenter k-means et le clustering hiérarchique ;
+\item conclure.
+\end{itemize}
+
+Important : chacun doit quand même savoir répondre sur toute la chaîne du projet, car les questions sont individuelles.
+
+\section{Questions probables et réponses}
+
+\subsection{Pourquoi normaliser les pixels ?}
+
+Les pixels sont au départ entre 0 et 255. On les divise par 255 pour obtenir des valeurs entre 0 et 1.
+
+Cela rend les données plus faciles à traiter pour certains modèles, surtout les modèles linéaires comme le perceptron ou la régression logistique.
+
+\subsection{Pourquoi utiliser un échantillon stratifié ?}
+
+Un échantillon stratifié garde les proportions des classes.
+
+Par exemple, si chaque classe représente environ 10 \% du jeu complet, elle représente aussi environ 10 \% de l'échantillon.
+
+Cela permet de réduire le temps de calcul sans créer un déséquilibre artificiel.
+
+\subsection{C'est quoi la baseline ?}
+
+La baseline est un modèle très simple qui prédit toujours la classe la plus fréquente.
+
+Elle sert de point de comparaison minimal. Un vrai modèle doit obtenir un meilleur score que cette baseline.
+
+\subsection{Pourquoi la forêt aléatoire fonctionne mieux ?}
+
+Une forêt aléatoire combine plusieurs arbres de décision.
+
+Chaque arbre vote pour une classe, puis la classe majoritaire est choisie.
+
+Cela permet de réduire les erreurs d'un arbre seul et de mieux capturer des relations non linéaires.
+
+\subsection{Comment lire une matrice de confusion ?}
+
+Les lignes sont les vraies classes.
+
+Les colonnes sont les classes prédites.
+
+La diagonale contient les bonnes prédictions.
+
+Les cases hors diagonale sont les erreurs.
+
+\subsection{Pourquoi Shirt est difficile ?}
+
+La classe Shirt ressemble à plusieurs vêtements du haut : T-shirt/top, Pullover et Coat.
+
+Comme les images sont en basse résolution, 28 x 28 pixels, les différences fines sont parfois perdues.
+
+\subsection{Pourquoi utiliser l'ACP avant le clustering ?}
+
+Les images ont 784 dimensions.
+
+L'ACP réduit cette dimension tout en conservant une grande partie de l'information.
+
+Cela accélère le clustering et peut réduire le bruit.
+
+\subsection{Pourquoi k = 10 pour k-means ?}
+
+Fashion-MNIST contient 10 classes.
+
+Choisir k = 10 permet de comparer les 10 clusters obtenus aux 10 vraies classes.
+
+\subsection{Que signifient ARI et NMI ?}
+
+ARI et NMI sont des scores qui comparent les clusters obtenus avec les vraies classes.
+
+Ils ne sont pas utilisés pour entraîner k-means. Ils servent seulement à évaluer le résultat après coup.
+
+Plus le score est élevé, meilleure est la correspondance entre clusters et classes.
+
+\subsection{Où est utilisé scikit-learn ?}
+
+Scikit-learn est utilisé pour :
+
+\begin{itemize}
+\item les modèles supervisés ;
+\item la validation croisée ;
+\item la PCA ;
+\item k-means ;
+\item le clustering hiérarchique ;
+\item les métriques comme accuracy, ARI, NMI et matrice de confusion.
+\end{itemize}
+
+\section{Questions approfondies possibles du professeur}
+
+Cette partie sert à vérifier que vous comprenez vraiment le code et les concepts.
+
+\subsection{Pourquoi avoir séparé le code dans le dossier \texttt{iads} au lieu de tout mettre dans le notebook ?}
+
+Cela rend le notebook plus lisible.
+
+Les fonctions réutilisables sont rangées dans des fichiers séparés :
+
+\begin{itemize}
+\item \texttt{utils.py} pour les données et les affichages ;
+\item \texttt{Classifiers.py} pour créer les modèles ;
+\item \texttt{evaluation.py} pour les évaluations ;
+\item \texttt{Clustering.py} pour le non-supervisé.
+\end{itemize}
+
+Réponse courte :
+
+\begin{quote}
+\itshape Le dossier \texttt{iads} permet de structurer le projet et d'éviter de répéter du code dans le notebook.
+\end{quote}
+
+\subsection{Que fait exactement \texttt{split\_features\_labels} ?}
+
+Elle transforme le DataFrame lu depuis le CSV en deux objets :
+
+\begin{itemize}
+\item \texttt{X}, qui contient les pixels ;
+\item \texttt{y}, qui contient les labels.
+\end{itemize}
+
+Elle enlève la colonne \texttt{label}, garde les 784 pixels, puis normalise les pixels si demandé.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Elle sépare les entrées du modèle et les réponses attendues.
+\end{quote}
+
+\subsection{Pourquoi \texttt{X} a 784 colonnes ?}
+
+Chaque image Fashion-MNIST mesure 28 x 28 pixels.
+
+Donc :
+
+\begin{codeblock}
+28 x 28 = 784
+\end{codeblock}
+
+Chaque image est aplatie en un vecteur de 784 valeurs.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Une image 28 x 28 devient un vecteur de 784 pixels.
+\end{quote}
+
+\subsection{Pourquoi convertir les pixels en \texttt{float32} ?}
+
+Les pixels sont utilisés dans des calculs numériques.
+
+\texttt{float32} permet :
+
+\begin{itemize}
+\item de faire la normalisation ;
+\item de réduire la mémoire utilisée ;
+\item d'être compatible avec les modèles scikit-learn.
+\end{itemize}
+
+Réponse courte :
+
+\begin{quote}
+\itshape On utilise \texttt{float32} pour manipuler efficacement des valeurs numériques normalisées.
+\end{quote}
+
+\subsection{Pourquoi les labels sont-ils en \texttt{int64} ?}
+
+Les labels sont des classes entières : \texttt{0}, \texttt{1}, \texttt{2}, etc.
+
+\texttt{int64} est un type entier standard, bien reconnu par NumPy, pandas et scikit-learn.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Les labels sont des numéros de classes, donc on les garde comme entiers.
+\end{quote}
+
+\subsection{Pourquoi utiliser \texttt{random\_state=42} ?}
+
+Certains algorithmes utilisent du hasard :
+
+\begin{itemize}
+\item découpage des données ;
+\item initialisation de k-means ;
+\item construction des forêts aléatoires ;
+\item validation croisée mélangée.
+\end{itemize}
+
+\texttt{random\_state=42} rend les résultats reproductibles.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Cela permet d'obtenir les mêmes résultats à chaque exécution.
+\end{quote}
+
+\subsection{Quelle est la différence entre validation croisée et test final ?}
+
+La validation croisée sert à comparer les modèles pendant les expérimentations.
+
+Le test final sert à évaluer le modèle choisi sur des données qui n'ont pas servi au choix du modèle.
+
+Réponse courte :
+
+\begin{quote}
+\itshape La validation croisée sert à choisir, le test final sert à mesurer la performance finale.
+\end{quote}
+
+\subsection{Pourquoi utiliser \texttt{StratifiedKFold} ?}
+
+\texttt{StratifiedKFold} garde les proportions des classes dans chaque fold.
+
+C'est important car Fashion-MNIST contient plusieurs classes.
+
+Si un fold contenait trop peu d'une classe, l'évaluation serait moins fiable.
+
+Réponse courte :
+
+\begin{quote}
+\itshape On l'utilise pour que chaque fold reste représentatif des 10 classes.
+\end{quote}
+
+\subsection{Que signifie \texttt{accuracy\_moyenne} dans la validation croisée ?}
+
+C'est la moyenne des accuracies obtenues sur les différents folds.
+
+Exemple avec 3 folds :
+
+\begin{codeblock}
+accuracy_moyenne = (score_fold_1 + score_fold_2 + score_fold_3) / 3
+\end{codeblock}
+
+Réponse courte :
+
+\begin{quote}
+\itshape C'est le score moyen du modèle sur plusieurs découpages des données.
+\end{quote}
+
+\subsection{Pourquoi regarder aussi l'écart-type ?}
+
+L'écart-type indique si les scores changent beaucoup d'un fold à l'autre.
+
+Un faible écart-type signifie que le modèle est assez stable.
+
+Un fort écart-type signifie que la performance dépend beaucoup du découpage.
+
+Réponse courte :
+
+\begin{quote}
+\itshape L'écart-type mesure la stabilité du modèle pendant la validation croisée.
+\end{quote}
+
+\subsection{Pourquoi la baseline est importante ?}
+
+La baseline donne un score minimal de référence.
+
+Si un modèle ne fait pas mieux que la baseline, il n'apprend pas vraiment une règle utile.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Elle permet de vérifier que nos modèles font mieux qu'une prédiction naïve.
+\end{quote}
+
+\subsection{Pourquoi le perceptron et la régression logistique utilisent \texttt{StandardScaler} ?}
+
+Ces modèles sont sensibles à l'échelle des variables.
+
+\texttt{StandardScaler} centre et réduit les données.
+
+Cela aide les modèles linéaires à apprendre plus correctement.
+
+Réponse courte :
+
+\begin{quote}
+\itshape On standardise parce que les modèles linéaires sont sensibles à l'échelle des variables.
+\end{quote}
+
+\subsection{Quelle est la différence entre perceptron et régression logistique ?}
+
+Le perceptron est un modèle linéaire qui cherche une frontière de décision.
+
+La régression logistique estime plutôt des scores liés à des probabilités de classes.
+
+Dans le projet, la régression logistique est entraînée avec \texttt{SGDClassifier(loss="log\_loss")}.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Les deux sont linéaires, mais la régression logistique optimise une perte probabiliste.
+\end{quote}
+
+\subsection{Pourquoi kNN peut être lent ?}
+
+kNN compare une image test avec beaucoup d'images d'entraînement.
+
+Il doit calculer des distances au moment de prédire.
+
+Donc la prédiction peut devenir coûteuse si le jeu de données est grand.
+
+Réponse courte :
+
+\begin{quote}
+\itshape kNN est lent en prédiction, car il compare les exemples aux données d'entraînement.
+\end{quote}
+
+\subsection{Pourquoi limiter la profondeur de l'arbre de décision ?}
+
+Un arbre trop profond peut apprendre les détails du jeu d'entraînement au lieu de généraliser.
+
+C'est du sur-apprentissage.
+
+Limiter \texttt{max\_depth} réduit ce risque.
+
+Réponse courte :
+
+\begin{quote}
+\itshape On limite la profondeur pour éviter le sur-apprentissage.
+\end{quote}
+
+\subsection{Pourquoi la forêt aléatoire est souvent meilleure qu'un arbre seul ?}
+
+Un arbre seul peut être instable.
+
+Une forêt aléatoire entraîne plusieurs arbres différents, puis combine leurs votes.
+
+Cela réduit les erreurs individuelles.
+
+Réponse courte :
+
+\begin{quote}
+\itshape La forêt aléatoire est plus robuste, car elle combine plusieurs arbres.
+\end{quote}
+
+\subsection{Que signifie \texttt{n\_estimators} dans une forêt aléatoire ?}
+
+\texttt{n\_estimators} est le nombre d'arbres dans la forêt.
+
+Plus il y a d'arbres, plus le vote est stable, mais plus le calcul est long.
+
+Réponse courte :
+
+\begin{quote}
+\itshape \texttt{n\_estimators} indique combien d'arbres participent au vote final.
+\end{quote}
+
+\subsection{Que signifie \texttt{n\_jobs=-1} ?}
+
+Cela demande à scikit-learn d'utiliser tous les coeurs disponibles du processeur.
+
+Le but est d'accélérer certains calculs.
+
+Réponse courte :
+
+\begin{quote}
+\itshape \texttt{n\_jobs=-1} parallélise le calcul sur tous les coeurs disponibles.
+\end{quote}
+
+\subsection{Pourquoi l'accuracy ne suffit pas toujours ?}
+
+L'accuracy donne le taux global de bonnes prédictions.
+
+Mais elle ne dit pas quelles classes sont mal reconnues.
+
+Pour cela, il faut regarder :
+
+\begin{itemize}
+\item le rapport de classification ;
+\item la matrice de confusion ;
+\item le rappel par classe.
+\end{itemize}
+
+Réponse courte :
+
+\begin{quote}
+\itshape L'accuracy résume tout en un nombre, mais elle cache les erreurs par classe.
+\end{quote}
+
+\subsection{Quelle est la différence entre précision et rappel ?}
+
+La précision répond à la question :
+
+\begin{quote}
+\itshape Parmi les exemples prédits comme une classe, combien sont vraiment de cette classe ?
+\end{quote}
+
+Le rappel répond à la question :
+
+\begin{quote}
+\itshape Parmi les vrais exemples d'une classe, combien le modèle a-t-il retrouvés ?
+\end{quote}
+
+Réponse courte :
+
+\begin{quote}
+\itshape La précision mesure la qualité des prédictions positives, le rappel mesure la capacité à retrouver une classe.
+\end{quote}
+
+\subsection{Pourquoi le rappel de \texttt{Shirt} est faible ?}
+
+Beaucoup de vrais \texttt{Shirt} sont prédits comme \texttt{T-shirt/top}, \texttt{Pullover} ou \texttt{Coat}.
+
+Cela diminue le rappel de la classe \texttt{Shirt}.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Le rappel de \texttt{Shirt} est faible parce que beaucoup de vrais shirts sont classés dans d'autres vêtements du haut.
+\end{quote}
+
+\subsection{Comment interpréter une case hors diagonale dans la matrice de confusion ?}
+
+Une case hors diagonale correspond à une erreur.
+
+Par exemple, ligne \texttt{Shirt}, colonne \texttt{T-shirt/top} :
+
+\begin{quote}
+\itshape des images réellement \texttt{Shirt} ont été prédites comme \texttt{T-shirt/top}.
+\end{quote}
+
+Réponse courte :
+
+\begin{quote}
+\itshape Hors diagonale, ce sont les confusions entre vraies classes et classes prédites.
+\end{quote}
+
+\subsection{Pourquoi \texttt{binary\_subset} transforme les labels en 0 et 1 ?}
+
+Pour obtenir un vrai problème de classification binaire.
+
+La première classe devient \texttt{0}, la deuxième devient \texttt{1}.
+
+Cela simplifie l'évaluation et la matrice de confusion.
+
+Réponse courte :
+
+\begin{quote}
+\itshape On réencode les deux classes pour travailler avec des labels binaires simples.
+\end{quote}
+
+\subsection{Pourquoi avoir choisi T-shirt/top contre Shirt ?}
+
+Ces deux classes sont visuellement proches.
+
+Cela crée une tâche binaire intéressante, plus difficile qu'une séparation évidente comme Trouser contre Bag.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Ce choix permet d'étudier une confusion réaliste entre deux classes proches.
+\end{quote}
+
+\subsection{Pourquoi utiliser l'ACP avant k-means ?}
+
+Les images ont 784 dimensions.
+
+k-means peut devenir plus lent et plus sensible au bruit dans un espace très grand.
+
+L'ACP réduit la dimension tout en gardant une grande partie de l'information.
+
+Réponse courte :
+
+\begin{quote}
+\itshape L'ACP rend le clustering plus rapide et plus lisible en gardant l'information principale.
+\end{quote}
+
+\subsection{Que signifie la variance expliquée par l'ACP ?}
+
+La variance expliquée indique la quantité d'information conservée par les composantes principales.
+
+Dans le projet, 50 composantes gardent environ 86,6 \% de la variance.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Cela signifie que la réduction de dimension conserve une grande partie de l'information des images.
+\end{quote}
+
+\subsection{Comment fonctionne k-means ?}
+
+k-means cherche à former \texttt{k} groupes.
+
+Il alterne deux étapes :
+
+\begin{enumerate}
+\item affecter chaque point au centre le plus proche ;
+\item recalculer les centres des groupes.
+\end{enumerate}
+
+Il répète jusqu'à stabilisation.
+
+Réponse courte :
+
+\begin{quote}
+\itshape k-means regroupe les points autour de centres appelés centroïdes.
+\end{quote}
+
+\subsection{Que représente l'inertie dans k-means ?}
+
+L'inertie mesure la somme des distances entre les points et leur centre de cluster.
+
+Plus elle est faible, plus les points sont proches de leur centre.
+
+Mais elle diminue presque toujours quand \texttt{k} augmente.
+
+Réponse courte :
+
+\begin{quote}
+\itshape L'inertie mesure la compacité des clusters.
+\end{quote}
+
+\subsection{Que mesure le score silhouette ?}
+
+Le score silhouette mesure si les points sont proches de leur cluster et éloignés des autres clusters.
+
+Il est généralement compris entre -1 et 1.
+
+Plus il est élevé, plus les clusters sont bien séparés.
+
+Réponse courte :
+
+\begin{quote}
+\itshape La silhouette mesure la qualité de séparation des clusters.
+\end{quote}
+
+\subsection{Pourquoi ARI et NMI ne sont pas des scores supervisés d'entraînement ?}
+
+K-means n'utilise pas les labels pour apprendre.
+
+ARI et NMI utilisent les labels seulement après le clustering pour comparer les groupes obtenus avec les vraies classes.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Les labels servent seulement à évaluer les clusters après coup, pas à les créer.
+\end{quote}
+
+\subsection{Pourquoi le clustering ne retrouve pas parfaitement les 10 classes ?}
+
+Les clusters sont basés sur la ressemblance visuelle.
+
+Or certaines classes différentes peuvent se ressembler fortement.
+
+Par exemple, \texttt{Shirt}, \texttt{T-shirt/top}, \texttt{Pullover} et \texttt{Coat} peuvent être proches dans l'espace des pixels.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Le clustering regroupe par ressemblance, pas forcément selon les labels humains.
+\end{quote}
+
+\subsection{Quelle est la différence entre k-means et clustering hiérarchique ?}
+
+k-means demande directement un nombre de clusters \texttt{k}.
+
+Le clustering hiérarchique construit progressivement une hiérarchie de groupes.
+
+Dans notre projet, on coupe ensuite cette hiérarchie pour obtenir 10 clusters.
+
+Réponse courte :
+
+\begin{quote}
+\itshape k-means cherche directement k groupes, alors que le hiérarchique construit une structure de regroupements successifs.
+\end{quote}
+
+\subsection{Pourquoi le clustering hiérarchique est fait sur moins d'exemples ?}
+
+Le clustering hiérarchique coûte plus cher en calcul et en mémoire.
+
+Sur trop d'images, il devient lent.
+
+Réponse courte :
+
+\begin{quote}
+\itshape On utilise moins d'exemples parce que le hiérarchique est plus coûteux que k-means.
+\end{quote}
+
+\subsection{Que fait \texttt{cluster\_label\_table} ?}
+
+Cette fonction regarde la composition réelle de chaque cluster.
+
+Elle indique combien d'exemples de chaque vraie classe se trouvent dans chaque cluster.
+
+Elle calcule aussi la classe majoritaire et la pureté.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Elle sert à comprendre ce que contient chaque cluster.
+\end{quote}
+
+\subsection{Que signifie la pureté d'un cluster ?}
+
+La pureté est la proportion de la classe majoritaire dans un cluster.
+
+Exemple :
+
+\begin{codeblock}
+cluster de 100 images
+70 images sont des Bag
+pureté = 70 / 100 = 0,70
+\end{codeblock}
+
+Réponse courte :
+
+\begin{quote}
+\itshape La pureté mesure si un cluster contient surtout une seule vraie classe.
+\end{quote}
+
+\subsection{Pourquoi vos modèles ne sont pas forcément optimaux pour des images ?}
+
+Les images sont aplaties en vecteurs de pixels.
+
+Cela perd une partie de la structure spatiale : voisinage, formes locales, contours.
+
+Un réseau convolutionnel serait plus adapté pour exploiter cette structure.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Nos modèles utilisent les pixels aplatis ; un modèle convolutionnel exploiterait mieux la structure des images.
+\end{quote}
+
+\subsection{Quelle est la principale limite de votre travail ?}
+
+Les modèles sont comparés sur des échantillons pour garder un temps raisonnable.
+
+De plus, les hyper-paramètres ne sont pas optimisés de façon exhaustive.
+
+Réponse courte :
+
+\begin{quote}
+\itshape La principale limite est le compromis entre temps de calcul et recherche complète des meilleurs paramètres.
+\end{quote}
+
+\subsection{Si vous aviez plus de temps, que feriez-vous ?}
+
+Améliorations possibles :
+
+\begin{itemize}
+\item entraîner sur toute la base ;
+\item faire une recherche d'hyper-paramètres plus complète ;
+\item tester un modèle convolutionnel ;
+\item analyser plus finement les classes confondues ;
+\item ajouter une validation sur plusieurs tailles d'échantillons.
+\end{itemize}
+
+Réponse courte :
+
+\begin{quote}
+\itshape Je testerais surtout un modèle convolutionnel et une optimisation plus poussée des hyper-paramètres.
+\end{quote}
+
+\subsection{Comment savez-vous que le code fonctionne correctement ?}
+
+On vérifie plusieurs points :
+
+\begin{itemize}
+\item les shapes de \texttt{X\_train}, \texttt{X\_test}, \texttt{y\_train}, \texttt{y\_test} ;
+\item la distribution des classes ;
+\item les scores de validation croisée ;
+\item les scores de test ;
+\item les matrices de confusion ;
+\item l'affichage d'exemples bien et mal classés.
+\end{itemize}
+
+Réponse courte :
+
+\begin{quote}
+\itshape On vérifie à la fois les dimensions, les distributions, les scores et les erreurs visibles.
+\end{quote}
+
+\subsection{Que se passerait-il si les labels étaient mal séparés des pixels ?}
+
+Le modèle pourrait apprendre sur de mauvaises colonnes.
+
+Par exemple, si le label restait dans \texttt{X}, le modèle aurait une information directe sur la réponse.
+
+Cela fausserait complètement les résultats.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Il faut bien retirer la colonne \texttt{label} de \texttt{X}, sinon l'évaluation peut être faussée.
+\end{quote}
+
+\subsection{Pourquoi afficher des exemples mal classés ?}
+
+Cela permet de comprendre visuellement les erreurs.
+
+On peut vérifier si l'erreur est logique, par exemple un vêtement ambigu ou une silhouette proche.
+
+Réponse courte :
+
+\begin{quote}
+\itshape Les exemples mal classés aident à interpréter concrètement les erreurs du modèle.
+\end{quote}
+
+\section{Phrase principale à apprendre}
+
+\begin{quote}
+\itshape Notre résultat principal est que la forêt aléatoire est le meilleur modèle testé. Elle atteint 0,8700 d'accuracy en multi-classe, mais les erreurs restent concentrées sur les vêtements du haut, surtout Shirt, car ces classes sont visuellement proches.
+\end{quote}
+
+\section{Explication du dossier \texttt{iads}}
+
+\section{Rôle général}
+
+Le dossier \texttt{iads} est une bibliothèque locale utilisée par le notebook.
+
+Il évite de mettre toutes les fonctions directement dans le notebook.
+
+Dans le notebook, on importe les modules avec :
+
+\begin{codeblock}
+from iads import utils as ut
+from iads import Classifiers as cl
+from iads import evaluation as ev
+from iads import Clustering as clust
+\end{codeblock}
+
+Cela signifie :
+
+\begin{itemize}
+\item \texttt{ut} sert à préparer et afficher les données ;
+\item \texttt{cl} sert à créer les modèles ;
+\item \texttt{ev} sert à évaluer les modèles ;
+\item \texttt{clust} sert au clustering ;
+\item \texttt{\_\_init\_\_.py} permet à Python de reconnaître \texttt{iads} comme un paquet.
+\end{itemize}
+
+\section{\texttt{utils.py}}
+
+Ce fichier contient les fonctions utilitaires de préparation et d'affichage.
+
+\subsection{\texttt{CLASS\_NAMES}}
+
+\texttt{CLASS\_NAMES} associe chaque label numérique à un nom de classe.
+
+Exemples :
+
+\begin{itemize}
+\item \texttt{0} correspond à \texttt{T-shirt/top} ;
+\item \texttt{6} correspond à \texttt{Shirt} ;
+\item \texttt{9} correspond à \texttt{Ankle boot}.
+\end{itemize}
+
+Cela permet d'afficher des noms lisibles au lieu de simples numéros.
+
+\subsection{\texttt{split\_features\_labels(dataframe, label\_col="label", normalize=True)}}
+
+Cette fonction sépare les pixels et les labels.
+
+Entrée :
+
+\begin{itemize}
+\item un DataFrame contenant une colonne \texttt{label} ;
+\item 784 colonnes de pixels.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item récupère la colonne \texttt{label} dans \texttt{y} ;
+\item supprime la colonne \texttt{label} pour garder seulement les pixels dans \texttt{X} ;
+\item convertit les pixels en nombres ;
+\item si \texttt{normalize=True}, divise les pixels par 255.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item \texttt{X}, tableau de taille \texttt{(nombre\_images, 784)} ;
+\item \texttt{y}, tableau de taille \texttt{(nombre\_images,)}.
+\end{itemize}
+
+Exemple :
+
+\begin{itemize}
+\item entrée : DataFrame de taille \texttt{(60000, 785)} ;
+\item sortie : \texttt{X.shape = (60000, 784)} et \texttt{y.shape = (60000,)}.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction transforme le fichier CSV en deux objets : les données d'entrée \texttt{X} et les labels \texttt{y}.
+\end{quote}
+
+\subsection{\texttt{stratified\_sample(X, y, n\_samples, random\_state=42)}}
+
+Cette fonction prend un sous-échantillon équilibré.
+
+Entrée :
+
+\begin{itemize}
+\item \texttt{X}, les images ;
+\item \texttt{y}, les labels ;
+\item \texttt{n\_samples}, le nombre d'exemples à garder.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item utilise \texttt{train\_test\_split} avec \texttt{stratify=y} ;
+\item garde les proportions des classes ;
+\item utilise \texttt{random\_state} pour obtenir le même tirage à chaque exécution.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item \texttt{X\_sample} ;
+\item \texttt{y\_sample}.
+\end{itemize}
+
+Exemple :
+
+\begin{itemize}
+\item entrée : 60 000 images ;
+\item \texttt{n\_samples=5000} ;
+\item sortie : 5 000 images avec une répartition équilibrée des classes.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape On utilise cette fonction pour réduire le temps de calcul sans modifier la proportion des classes.
+\end{quote}
+
+\subsection{\texttt{binary\_subset(X, y, class\_a, class\_b)}}
+
+Cette fonction crée un problème binaire à partir du problème multi-classe.
+
+Entrée :
+
+\begin{itemize}
+\item toutes les images ;
+\item tous les labels ;
+\item deux classes à conserver.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item garde seulement les exemples dont le label vaut \texttt{class\_a} ou \texttt{class\_b} ;
+\item transforme \texttt{class\_a} en label binaire \texttt{0} ;
+\item transforme \texttt{class\_b} en label binaire \texttt{1}.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item \texttt{X\_bin}, les images filtrées ;
+\item \texttt{y\_bin}, les labels binaires.
+\end{itemize}
+
+Exemple :
+
+\begin{itemize}
+\item \texttt{class\_a=0} pour T-shirt/top ;
+\item \texttt{class\_b=6} pour Shirt ;
+\item sortie : seulement ces deux classes, avec labels \texttt{0} et \texttt{1}.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction nous permet d'étudier spécifiquement la confusion entre T-shirt/top et Shirt.
+\end{quote}
+
+\subsection{\texttt{class\_distribution(y)}}
+
+Cette fonction compte le nombre d'exemples par classe.
+
+Entrée :
+
+\begin{itemize}
+\item un tableau de labels.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item compte chaque label avec \texttt{value\_counts()} ;
+\item trie les labels ;
+\item ajoute le nom lisible de chaque classe.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item un DataFrame avec les colonnes \texttt{classe}, \texttt{nom} et \texttt{effectif}.
+\end{itemize}
+
+Exemple :
+
+\begin{itemize}
+\item entrée : \texttt{[0, 0, 1, 6]} ;
+\item sortie : classe \texttt{0} avec effectif \texttt{2}, classe \texttt{1} avec effectif \texttt{1}, classe \texttt{6} avec effectif \texttt{1}.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction vérifie que les classes sont bien réparties.
+\end{quote}
+
+\subsection{\texttt{plot\_images\_grid(X, y=None, indices=None, n\_cols=8, title=None)}}
+
+Cette fonction affiche plusieurs images dans une grille.
+
+Entrée :
+
+\begin{itemize}
+\item \texttt{X}, les images sous forme de vecteurs de 784 pixels ;
+\item \texttt{y}, les labels, optionnel ;
+\item \texttt{indices}, les images à afficher ;
+\item \texttt{n\_cols}, le nombre de colonnes.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item transforme chaque vecteur de 784 pixels en image 28 x 28 ;
+\item affiche chaque image avec \texttt{imshow} ;
+\item ajoute le nom de la classe si \texttt{y} est donné.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item une figure Matplotlib.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction sert à vérifier visuellement les données avant de lancer les modèles.
+\end{quote}
+
+\subsection{\texttt{plot\_confusion\_matrix(matrix, title="Matrice de confusion")}}
+
+Cette fonction affiche une matrice de confusion sous forme de carte de chaleur.
+
+Entrée :
+
+\begin{itemize}
+\item une matrice de confusion sous forme de DataFrame ;
+\item un titre.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item affiche la matrice avec la palette \texttt{Blues} ;
+\item ajoute les labels des axes ;
+\item ajoute une barre de couleur.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item une figure Matplotlib.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Bleu clair signifie peu d'exemples, bleu foncé signifie beaucoup d'exemples. La diagonale représente les bonnes prédictions.
+\end{quote}
+
+\section{\texttt{Classifiers.py}}
+
+Ce fichier contient les fonctions qui créent les modèles supervisés.
+
+Important : ces fonctions n'entraînent pas les modèles. Elles renvoient seulement des objets scikit-learn prêts à être entraînés avec \texttt{.fit()}.
+
+\subsection{\texttt{baseline\_classifier()}}
+
+Crée un modèle de référence très simple.
+
+Calcul :
+
+\begin{itemize}
+\item utilise \texttt{DummyClassifier(strategy="most\_frequent")} ;
+\item le modèle prédit toujours la classe la plus fréquente.
+\end{itemize}
+
+Utilité :
+
+\begin{itemize}
+\item sert de comparaison minimale.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape La baseline permet de vérifier que nos vrais modèles apprennent réellement quelque chose.
+\end{quote}
+
+\subsection{\texttt{perceptron\_classifier(random\_state=42)}}
+
+Crée un perceptron avec standardisation.
+
+Calcul :
+
+\begin{itemize}
+\item applique \texttt{StandardScaler()} ;
+\item entraîne ensuite un \texttt{Perceptron}.
+\end{itemize}
+
+Pourquoi standardiser :
+
+\begin{itemize}
+\item le perceptron est sensible à l'échelle des variables.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Le perceptron est un modèle linéaire. Il cherche une séparation entre les classes.
+\end{quote}
+
+\subsection{\texttt{sgd\_logistic\_classifier(random\_state=42)}}
+
+Crée une régression logistique entraînée avec descente de gradient stochastique.
+
+Calcul :
+
+\begin{itemize}
+\item applique \texttt{StandardScaler()} ;
+\item utilise \texttt{SGDClassifier(loss="log\_loss")}.
+\end{itemize}
+
+Interprétation :
+
+\begin{itemize}
+\item \texttt{loss="log\_loss"} correspond à une régression logistique.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape C'est un modèle linéaire entraîné efficacement avec SGD.
+\end{quote}
+
+\subsection{\texttt{knn\_classifier(n\_neighbors=5)}}
+
+Crée un modèle k plus proches voisins.
+
+Calcul :
+
+\begin{itemize}
+\item pour une image test, cherche les \texttt{k} images d'entraînement les plus proches ;
+\item prédit la classe majoritaire parmi ces voisins ;
+\item avec \texttt{weights="distance"}, les voisins proches comptent plus.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Le kNN ne construit pas vraiment de modèle complexe pendant l'entraînement. Il compare surtout les distances au moment de prédire.
+\end{quote}
+
+\subsection{\texttt{decision\_tree\_classifier(random\_state=42, max\_depth=18)}}
+
+Crée un arbre de décision.
+
+Calcul :
+
+\begin{itemize}
+\item construit une suite de décisions sur les pixels ;
+\item limite la profondeur avec \texttt{max\_depth}.
+\end{itemize}
+
+Pourquoi limiter la profondeur :
+
+\begin{itemize}
+\item pour réduire le sur-apprentissage.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Un arbre seul peut apprendre trop précisément les données d'entraînement. C'est pour cela qu'on limite sa profondeur.
+\end{quote}
+
+\subsection{\texttt{random\_forest\_classifier(random\_state=42, n\_estimators=120, max\_depth=None)}}
+
+Crée une forêt aléatoire.
+
+Calcul :
+
+\begin{itemize}
+\item crée plusieurs arbres de décision ;
+\item chaque arbre vote pour une classe ;
+\item la classe finale est celle qui obtient le plus de votes.
+\end{itemize}
+
+Paramètres importants :
+
+\begin{itemize}
+\item \texttt{n\_estimators} = nombre d'arbres ;
+\item \texttt{max\_depth} = profondeur maximale ;
+\item \texttt{n\_jobs=-1} = utilise tous les coeurs disponibles.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape La forêt aléatoire fonctionne mieux qu'un arbre seul, car elle combine plusieurs arbres et réduit les erreurs individuelles.
+\end{quote}
+
+\section{\texttt{evaluation.py}}
+
+Ce fichier contient les outils d'évaluation des modèles.
+
+\subsection{\texttt{cross\_validate\_classifiers(classifiers, X, y, cv=3, random\_state=42)}}
+
+Cette fonction compare plusieurs modèles par validation croisée.
+
+Entrée :
+
+\begin{itemize}
+\item un dictionnaire de modèles ;
+\item les données \texttt{X} ;
+\item les labels \texttt{y} ;
+\item le nombre de folds \texttt{cv}.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item crée un \texttt{StratifiedKFold} ;
+\item entraîne chaque modèle sur plusieurs découpages ;
+\item calcule l'accuracy sur chaque fold ;
+\item mesure le temps total.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item un DataFrame avec :
+\item le nom du modèle ;
+\item l'accuracy moyenne ;
+\item l'écart-type ;
+\item le temps total ;
+\item les scores de chaque fold.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape La validation croisée permet de comparer les modèles de manière plus fiable qu'un seul découpage train/test.
+\end{quote}
+
+\subsection{\texttt{fit\_and\_score(model, X\_train, y\_train, X\_test, y\_test)}}
+
+Cette fonction entraîne un modèle et le teste.
+
+Calcul :
+
+\begin{itemize}
+\item lance \texttt{model.fit(X\_train, y\_train)} ;
+\item mesure le temps d'entraînement ;
+\item lance \texttt{model.predict(X\_test)} ;
+\item mesure le temps de prédiction ;
+\item calcule l'accuracy.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item un dictionnaire contenant :
+\item le modèle entraîné ;
+\item les prédictions ;
+\item l'accuracy ;
+\item le temps d'apprentissage ;
+\item le temps de prédiction.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction sert à évaluer le modèle final sur le vrai jeu de test.
+\end{quote}
+
+\subsection{\texttt{confusion\_dataframe(y\_true, y\_pred, labels, names=None)}}
+
+Cette fonction construit une matrice de confusion.
+
+Entrée :
+
+\begin{itemize}
+\item les vraies classes ;
+\item les classes prédites ;
+\item l'ordre des labels ;
+\item les noms des classes.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item compte combien de fois chaque vraie classe est prédite comme chaque classe ;
+\item transforme le résultat en DataFrame.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item une matrice avec vraies classes en lignes et classes prédites en colonnes.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette matrice permet de voir précisément quelles classes sont confondues.
+\end{quote}
+
+\subsection{\texttt{classification\_report\_dataframe(y\_true, y\_pred, target\_names=None)}}
+
+Cette fonction crée un rapport de classification.
+
+Elle calcule :
+
+\begin{itemize}
+\item \texttt{precision} ;
+\item \texttt{recall} ;
+\item \texttt{f1-score} ;
+\item \texttt{support}.
+\end{itemize}
+
+Définitions :
+
+\begin{itemize}
+\item precision : parmi les exemples prédits dans une classe, proportion correcte ;
+\item recall : parmi les vrais exemples d'une classe, proportion retrouvée ;
+\item f1-score : équilibre entre precision et recall ;
+\item support : nombre d'exemples réels de la classe.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Le rapport de classification permet d'analyser les performances classe par classe, pas seulement avec l'accuracy globale.
+\end{quote}
+
+\section{\texttt{Clustering.py}}
+
+Ce fichier contient les fonctions pour l'apprentissage non-supervisé.
+
+\subsection{\texttt{evaluate\_kmeans\_range(X, y\_true, k\_values, random\_state=42)}}
+
+Cette fonction teste k-means pour plusieurs valeurs de \texttt{k}.
+
+Entrée :
+
+\begin{itemize}
+\item les données \texttt{X}, souvent après ACP ;
+\item les vraies classes \texttt{y\_true}, seulement pour l'évaluation ;
+\item les valeurs de \texttt{k} à tester.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item entraîne un k-means pour chaque valeur de \texttt{k} ;
+\item récupère les clusters ;
+\item calcule :
+\item inertie ;
+\item silhouette ;
+\item ARI ;
+\item NMI.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item un DataFrame avec les scores pour chaque \texttt{k}.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Les labels ne servent pas à entraîner k-means. Ils servent uniquement à mesurer après coup si les clusters correspondent aux vraies classes.
+\end{quote}
+
+\subsection{\texttt{cluster\_label\_table(cluster\_labels, true\_labels)}}
+
+Cette fonction décrit la composition des clusters.
+
+Entrée :
+
+\begin{itemize}
+\item les labels de clusters ;
+\item les vraies classes.
+\end{itemize}
+
+Calcul :
+
+\begin{itemize}
+\item construit un tableau croisé ;
+\item compte les vraies classes dans chaque cluster ;
+\item trouve la classe majoritaire de chaque cluster ;
+\item calcule la pureté.
+\end{itemize}
+
+Sortie :
+
+\begin{itemize}
+\item un DataFrame qui montre la composition réelle des clusters.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Cette fonction permet de comprendre ce que contient chaque cluster.
+\end{quote}
+
+\subsection{\texttt{agglomerative\_labels(X, n\_clusters=10, linkage="ward")}}
+
+Cette fonction applique un clustering hiérarchique agglomératif.
+
+Calcul :
+
+\begin{itemize}
+\item au départ, chaque exemple est son propre cluster ;
+\item les clusters les plus proches sont fusionnés progressivement ;
+\item on coupe ensuite la hiérarchie pour obtenir \texttt{n\_clusters}.
+\end{itemize}
+
+Avec \texttt{linkage="ward"} :
+
+\begin{itemize}
+\item la méthode cherche à limiter la variance à l'intérieur des clusters.
+\end{itemize}
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape Le clustering hiérarchique est intéressant à interpréter, mais il coûte plus cher, donc nous l'avons utilisé sur un échantillon plus petit.
+\end{quote}
+
+\section{\texttt{\_\_init\_\_.py}}
+
+Ce fichier transforme le dossier \texttt{iads} en paquet Python.
+
+Il permet d'écrire :
+
+\begin{codeblock}
+from iads import utils
+from iads import Classifiers
+from iads import evaluation
+from iads import Clustering
+\end{codeblock}
+
+Il définit aussi \texttt{\_\_all\_\_}, c'est-à-dire la liste des modules exportés quand on importe le paquet.
+
+À dire à l'oral :
+
+\begin{quote}
+\itshape \texttt{\_\_init\_\_.py} sert surtout à rendre le dossier importable comme une bibliothèque locale.
+\end{quote}
+
+\section{Résumé ultra-court du code}
+
+Le code suit cette logique :
+
+\begin{enumerate}
+\item \texttt{utils.py} prépare les données.
+\item \texttt{Classifiers.py} crée les modèles.
+\item \texttt{evaluation.py} compare et évalue les modèles.
+\item \texttt{Clustering.py} analyse les regroupements non-supervisés.
+\item Le notebook assemble tout pour produire les tableaux, graphes et résultats.
+\end{enumerate}
+
+\section{Réponse si on demande ce que vous avez codé}
+
+Réponse possible :
+
+\begin{quote}
+\itshape Nous avons organisé le projet en modules. Les fonctions de \texttt{utils.py} préparent les données et affichent les graphes. Les fonctions de \texttt{Classifiers.py} créent les modèles scikit-learn. Les fonctions de \texttt{evaluation.py} automatisent la validation croisée, le test final et les matrices de confusion. Enfin, \texttt{Clustering.py} regroupe les fonctions liées à k-means et au clustering hiérarchique.
+\end{quote}
+
+\section{Réponse si on demande la limite principale du projet}
+
+Réponse possible :
+
+\begin{quote}
+\itshape La principale limite est que les modèles testés ne sont pas spécifiquement conçus pour les images. Ils utilisent les pixels aplatis en vecteurs. Un modèle convolutionnel pourrait mieux exploiter la structure spatiale des images.
+\end{quote}
+\end{document}

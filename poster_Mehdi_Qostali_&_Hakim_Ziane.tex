@@ -1,0 +1,291 @@
+\documentclass[a3paper,landscape,9pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage[a3paper,landscape,margin=0.9cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{ragged2e}
+\usepackage{microtype}
+
+\pgfplotsset{compat=1.18}
+\pagestyle{empty}
+\renewcommand{\familydefault}{\sfdefault}
+\setlength{\parindent}{0pt}
+\setlength{\fboxsep}{5pt}
+\setlength{\fboxrule}{0.55pt}
+\setlist[itemize]{leftmargin=*, itemsep=1pt, topsep=1pt}
+\sloppy
+\emergencystretch=3em
+
+\definecolor{navy}{HTML}{0B2F4A}
+\definecolor{blue}{HTML}{2F80ED}
+\definecolor{darkblue}{HTML}{145DA0}
+\definecolor{pale}{HTML}{F7FBFE}
+\definecolor{cyan}{HTML}{EAF4FC}
+\definecolor{line}{HTML}{BFD3E2}
+\definecolor{green}{HTML}{1F9D7A}
+\definecolor{orange}{HTML}{F2994A}
+\definecolor{textgray}{HTML}{26323D}
+\definecolor{muted}{HTML}{52616B}
+
+% Cadre à hauteur contrôlée.
+% La largeur interne retire l'épaisseur de la bordure et l'espace du fcolorbox :
+% cela évite que le texte ou la bordure dépasse de la colonne.
+\newcommand{\posterbox}[3]{%
+  \fcolorbox{line}{pale}{%
+    \begin{minipage}[t][#1][t]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+      \RaggedRight
+      {\large\bfseries\color{navy} #2}\par
+      \vspace{0.10cm}
+      {\footnotesize #3}
+    \end{minipage}%
+  }%
+}
+
+\newcommand{\metric}[4]{%
+  \begin{minipage}[t]{#1}
+    \fcolorbox{#4}{white}{%
+      \begin{minipage}[c][1.10cm][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+        \centering
+        {\Large\bfseries\color{#4} #2}\par
+        {\scriptsize\bfseries #3}
+      \end{minipage}%
+    }%
+  \end{minipage}%
+}
+
+\newcommand{\stepbox}[3]{%
+  \begin{minipage}[t]{0.235\linewidth}
+    \fcolorbox{line}{white}{%
+      \begin{minipage}[c][0.82cm][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+        {\bfseries\color{blue} #1}\quad{\bfseries #2}\par
+        {\scriptsize\color{muted} #3}
+      \end{minipage}%
+    }%
+  \end{minipage}%
+}
+
+\begin{document}
+
+{\Huge\bfseries\color{navy} Projet Fashion-MNIST : classification et clustering}\par
+\vspace{0.08cm}
+{\large LU3IN0226 - IA \& Data science \hfill Noms : \textbf{Mehdi Qostali et Hakim Ziane}}\par
+\vspace{0.05cm}
+
+\vspace{0.22cm}
+
+\fcolorbox{blue}{cyan}{%
+  \begin{minipage}[c][2.85cm][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+    \RaggedRight
+    {\Large\bfseries\color{navy} Lecture rapide}\par
+    \vspace{0.14cm}
+    {\large\bfseries La forêt aléatoire est le meilleur modèle supervisé testé : 0,8535 en binaire et 0,8700 en multi-classe.}\par
+    \vspace{0.12cm}
+    {\small Les erreurs viennent surtout des vêtements du haut : \textit{Shirt}, \textit{T-shirt/top}, \textit{Pullover} et \textit{Coat}.}\par
+    \vspace{0.22cm}
+    \stepbox{1}{Données}{images + labels}
+    \hfill
+    \stepbox{2}{Préparation}{normalisation}
+    \hfill
+    \stepbox{3}{Modèles}{supervisé + clusters}
+    \hfill
+    \stepbox{4}{Évaluation}{accuracy, ARI, NMI}
+  \end{minipage}
+}
+
+\vspace{0.20cm}
+
+\begin{center}
+\metric{0.23\linewidth}{0,8535}{Accuracy test binaire}{green}
+\hfill
+\metric{0.23\linewidth}{0,8700}{Accuracy test multi-classe}{blue}
+\hfill
+\metric{0.23\linewidth}{0,611}{NMI hiérarchique}{orange}
+\hfill
+\metric{0.23\linewidth}{86,6\,\%}{Variance gardée par l'ACP}{darkblue}
+\end{center}
+
+\vspace{0.25cm}
+
+\begin{minipage}[t]{0.31\linewidth}
+\posterbox{3.10cm}{Données et objectif}{
+Fashion-MNIST contient 10 classes : T-shirt/top, Trouser, Pullover, Dress, Coat, Sandal, Shirt, Sneaker, Bag et Ankle boot.
+
+\vspace{0.08cm}
+Le but est de comparer plusieurs modèles supervisés, puis de voir si le clustering retrouve des groupes cohérents sans utiliser les labels pendant l'apprentissage.
+}
+
+\vspace{0.18cm}
+
+\posterbox{3.65cm}{Préparation}{
+Chaque image est représentée par 784 pixels et les valeurs sont normalisées dans $[0,1]$.
+
+\vspace{0.08cm}
+Les validations croisées sont faites sur des échantillons stratifiés : chaque classe reste représentée dans les mêmes proportions.
+
+\vspace{0.08cm}
+Le test final utilise \texttt{fashion-mnist\_test.csv}.
+}
+
+\vspace{0.18cm}
+
+\posterbox{2.95cm}{Lecture des matrices}{
+Ligne = vraie classe. Colonne = classe prédite.
+
+\vspace{0.08cm}
+Bleu clair = peu d'exemples. Bleu foncé = beaucoup d'exemples.
+
+\vspace{0.08cm}
+La diagonale indique les bonnes prédictions. Les autres cases indiquent les erreurs.
+}
+
+\vspace{0.18cm}
+
+\posterbox{3.00cm}{À retenir}{
+Les classes les plus simples sont celles dont la silhouette est très différente, par exemple les sacs, les pantalons et plusieurs chaussures.
+
+\vspace{0.08cm}
+Les vêtements du haut se ressemblent davantage, ce qui explique la plupart des confusions.
+}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.34\linewidth}
+\posterbox{3.15cm}{Résultats supervisés}{
+\textbf{Binaire.} La tâche T-shirt/top vs Shirt est difficile, car les formes sont proches. La forêt aléatoire atteint 0,8535 sur le test.
+
+\vspace{0.08cm}
+\textbf{Multi-classe.} Sur les 10 classes, la forêt aléatoire atteint 0,8700 après entraînement sur 20\,000 exemples.
+}
+
+\vspace{0.18cm}
+
+\posterbox{6.05cm}{Comparaison des classifieurs}{
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.96\linewidth,
+    height=4.95cm,
+    ybar,
+    ymin=0,
+    ymax=1,
+    ylabel={Accuracy CV},
+    symbolic x coords={Baseline,Arbre,Perceptron,kNN,SGD log.,Forêt},
+    xtick=data,
+    x tick label style={rotate=30,anchor=east,font=\scriptsize},
+    legend style={at={(0.02,0.98)},anchor=north west,draw=none,font=\scriptsize},
+    bar width=5pt,
+    grid=major,
+    grid style={line!55},
+]
+\addplot[fill=blue] coordinates {
+    (Baseline,0.100) (Arbre,0.721) (Perceptron,0.776) (kNN,0.791) (SGD log.,0.802) (Forêt,0.834)
+};
+\addplot[fill=green] coordinates {
+    (Baseline,0.500) (Arbre,0.790) (Perceptron,0.801) (kNN,0.828) (Forêt,0.842)
+};
+\legend{Multi-classe,Binaire}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+La forêt aléatoire donne les meilleurs scores parmi les modèles testés.
+}
+
+\vspace{0.18cm}
+
+\posterbox{4.65cm}{Erreurs les plus fréquentes}{
+\begin{tabular}{@{}p{0.66\linewidth}r@{}}
+\toprule
+Vraie classe $\rightarrow$ classe prédite & Nb \\
+\midrule
+Shirt $\rightarrow$ T-shirt/top & 179 \\
+Pullover $\rightarrow$ Coat & 113 \\
+Shirt $\rightarrow$ Pullover & 112 \\
+Shirt $\rightarrow$ Coat & 90 \\
+T-shirt/top $\rightarrow$ Shirt & 85 \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.10cm}
+La classe \textit{Shirt} est la plus fragile : son rappel est autour de 0,566.
+}
+
+\vspace{0.18cm}
+
+\posterbox{2.75cm}{Interprétation}{
+La forêt aléatoire sépare bien les classes très différentes, mais elle hésite quand plusieurs vêtements ont une forme globale proche en $28 \times 28$ pixels.
+}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.31\linewidth}
+\posterbox{3.30cm}{Non-supervisé}{
+Avant le clustering, une ACP réduit la dimension.
+
+\vspace{0.08cm}
+Pour k-means, 50 composantes principales gardent environ 86,6\,\% de la variance.
+
+\vspace{0.08cm}
+Pour le hiérarchique, on utilise 500 exemples et 20 composantes pour limiter le coût.
+}
+
+\vspace{0.18cm}
+
+\posterbox{6.05cm}{Scores de clustering}{
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.96\linewidth,
+    height=4.95cm,
+    xmin=4,
+    xmax=21,
+    ymin=0,
+    ymax=0.62,
+    xlabel={Nombre de clusters},
+    ylabel={Score},
+    xtick={5,10,15,20},
+    grid=major,
+    grid style={line!55},
+    legend style={at={(0.02,0.98)},anchor=north west,draw=none,font=\scriptsize},
+]
+\addplot[color=green,mark=*] coordinates {(5,0.199) (10,0.199) (15,0.174) (20,0.162)};
+\addplot[color=blue,mark=*] coordinates {(5,0.284) (10,0.385) (15,0.373) (20,0.326)};
+\addplot[color=orange,mark=*] coordinates {(5,0.423) (10,0.536) (15,0.547) (20,0.538)};
+\addplot[color=muted,dashed] coordinates {(10,0) (10,0.62)};
+\legend{Silhouette,ARI,NMI,$k=10$}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+$k=10$ est retenu pour correspondre aux 10 classes Fashion-MNIST.
+}
+
+\vspace{0.18cm}
+
+\posterbox{3.45cm}{Résultats de clustering}{
+\textbf{k-means :} ARI $\simeq 0,385$ et NMI $\simeq 0,536$ avec $k=10$.
+
+\vspace{0.08cm}
+\textbf{Hiérarchique :} ARI $\simeq 0,430$ et NMI $\simeq 0,611$ sur 500 exemples.
+
+\vspace{0.08cm}
+Les groupes sont cohérents visuellement, mais ne recouvrent pas parfaitement les 10 labels.
+}
+
+\vspace{0.18cm}
+
+\posterbox{3.30cm}{Bilan et pistes}{
+Le supervisé reste plus performant pour prédire les labels.
+
+\vspace{0.08cm}
+Pour améliorer : entraîner sur toute la base, optimiser les hyper-paramètres, tester un modèle convolutionnel et analyser séparément Shirt, Pullover, Coat et T-shirt/top.
+}
+\end{minipage}
+
+\vfill
+
+\end{document}
